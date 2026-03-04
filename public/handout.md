@@ -1,457 +1,225 @@
-# CMSC 12 - Fundamentals of Programming 2  
-## First Programming Exam
-### Problem: Inventory & Order Tracking System in Java (OOP + Custom Exceptions)
+**Math 154 \- Computer Programming 2**  
+**Second Semester AY 2025 \- 2026**
 
-**REQUIRED: JAVA 25**
-In this exam, you will design and implement a **basic inventory and order tracking system** in **Java**, organized into **multiple classes** with clear responsibilities. You must apply object-oriented principles such as **encapsulation**, **separation of concerns**, and **exception-based validation**.
+# Module 5: Principles of OOP
 
----
+## Laboratory Guide
 
-## System Overview
+# Graded Laboratory Exercise 5
 
-Your system must represent:
+## Problem: The 4 pillars of OOP in Banking
 
-- **Products**
-- **Orders**
-- A **Store** that manages multiple products and multiple orders (provided with minimal edits needed)
+In this exercise, your task is to design and implement a Java application that demonstrates the four pillars of Object-Oriented Programming: Abstraction, Encapsulation, Inheritance, and Polymorphism using a real-world banking checkout/payment scenario.
 
-The system should provide the following features:
+A banking system typically supports multiple payment channels (e.g., cards and wallets). The checkout module should be able to process any payment type without needing to know its concrete class, while still enforcing security rules like masking sensitive details and protecting account balances.
 
-1. Create a store record (**name** and **opening date**)
-2. Define two maximum limits when creating the store:
-   - Maximum number of products, **P**
-   - Maximum number of orders, **O**
-3. Store up to **P** product records and up to **O** order records
-4. Add products
-5. Restock products (increase quantity)
-6. Update a product’s:
-   - name
-   - price
-7. Search products by name
-8. Create orders (reduces stock if possible)
-9. Cancel orders (restores stock)
-10. Display store credentials, product listings, and order listings
-11. Compute **order age in days** based on order date
+You will implement this program in Java by writing the following classes:
 
-You will implement this program in Java by writing **six classes**:
+* PaymentMethod (abstract class)  
+* Wallet (encapsulation)  
+* CardPayment (inherits from PaymentMethod)  
+* WalletPayment (inherits from PaymentMethod)  
+* Checkout (polymorphism)  
+* BankingPaymentTester (provided as .class)
 
-1. `Product` class  
-2. `Order` class  
-3. `Store` class  
-4. `InvalidProductDataException` class  
-5. `StoreCapacityExceededException` class  
-6. `RecordNotFoundException` class
+A tester class may be provided to validate correctness, formatting, and method existence.
 
-> You may add more helper classes/methods if needed, but the required class names and required method names must be followed.
-> The `StoreConsole` class will be provided to you.
+## Part 1: Abstraction
 
----
+The PaymentMethod class represents a banking payment channel contract. All payment types must follow the same contract so that the checkout system can treat them uniformly.
 
-## Part 0: The StoreConsole Class
+### Requirements
 
-Access the `StoreConsole` class by:
-```bash
-  wget -O StoreConsole.class http://{LOCAL SERVER}:8080/public/StoreConsole.class
-```
-This will download the `StoreConsole` class in your project directory.
+Create an abstract class named PaymentMethod with the following:
 
----
+1. Abstract method  
+   * public abstract boolean pay(double amount);  
+   * Returns true if the payment succeeds, otherwise false.
 
-## Part 1: User-Defined Exceptions (Very Important)
+2. Masked details method  
+   * public String getMaskedDetails()  
+   * You may implement it as:  
+     * abstract, or  
+     * concrete (default behavior), depending on your design.  
+   * Must return a safe-to-display identifier (e.g., masked card number or wallet label).
 
-You must create and use **three custom exception classes**. Each must:
+### Banking realism rule
 
-- Extend `Exception`
-- Provide a constructor that accepts an error message
+* Never expose full sensitive details (e.g., full card number so use \*\*\*) in getMaskedDetails().
 
-### Required Custom Exceptions
+## Part 2: Encapsulation
 
-1. `InvalidProductDataException`  
-   Thrown when:
-   - Product name is empty or null
-   - Price is negative
-   - Quantity is negative
-   - Restock/deduct amount is invalid
-   - Order contains invalid amount/date/id/name
+The Wallet class represents a stored-value balance similar to an e-wallet or digital bank sub-account.
 
-2. `StoreCapacityExceededException`  
-   Thrown when:
-   - Adding a product exceeds product capacity
-   - Creating an order exceeds order capacity
+### Instance Variable
 
-3. `RecordNotFoundException`  
-   Thrown when:
-   - Updating a non-existent product
-   - Accessing an invalid index (product/order)
-   - Canceling a non-existent order
-   - Creating an order for a non-existent product
-
-Some cases may be forgotten, please refer to the succeeding parts.
-
-You can test your User-defined exceptions by:
-**You have max 3 test for this part**
-
-```bash
-  javac InvalidProductDataException.java StoreCapacityExceededException.java RecordNotFoundException.java
-  curl.exe -F "args=-p1" -F "files=@InvalidProductDataException.class" -F "files=@StoreCapacityExceededException.class" -F "files=@RecordNotFoundException.class" http://{LOCAL SERVER}:8080/submit
-```
-
----
-
-## Input and Validation Rules
-
-- Dates must use `LocalDate`
-- Date format: `YYYY-MM-DD`
-- Names must not be empty
-- Prices must be non-negative
-- Quantities must be non-negative
-- Capacities must be positive
-- Order amounts must be positive
-- Order date must not be in the future
-
----
-
-## Part 2: The Product Class
-
-Each `Product` object represents an item the store can sell.
-
-### Required Instance Variables
-
-`Product` must have the following private instance variables:
-
-- `name` of type `String`
-- `price` of type `double`
-- `quantity` of type `int`
-
-> **Encapsulation is required.** No direct field access outside the class.
-
-### Constructor Requirements
-
-The constructor must accept **three parameters**:
-
-- `name`
-- `price`
-- `quantity`
-
-It must:
-- Initialize all fields
-- Validate all inputs
-- Throw a user-defined exception if:
-  - `name` is `null` or empty
-  - `price` is negative
-  - `quantity` is negative
+* private double balance;
 
 ### Required Methods
 
-Provide proper getters and setters for all variables:
+1. public Wallet()  
+   * Initializes balance to 0.
 
-- `public String getName()`
-- `public double getPrice()`
-- `public int getQuantity()`
+2. public Wallet(double initialBalance)  
+   * If initialBalance is negative, it must be rejected using validation logic (see “Rejection rule”).
 
-- `public void setName(String name)`  
-- `public void setPrice(double price)`  
-- `public void setQuantity(int quantity)`
+3. public void deposit(double amount)  
+   * Adds to balance.
 
-**Setters must validate input** and throw a user-defined exception on invalid values.
+4. public boolean withdraw(double amount)  
+   * Deducts from the balance if possible.  
+   * Returns true if the withdrawal succeeds, otherwise false.
 
-Also include:
+5. public double getBalance()  
+   * Returns the balance (read-only access).
 
-- `public void restock(int amount)`
-  - Adds to quantity
-  - Throws exception if `amount <= 0`
+### Rules
 
-- `public boolean deductStock(int amount)`
-  - Deducts if enough quantity exists
-  - Returns `true` if deducted, `false` otherwise  
-  - Throws exception if `amount <= 0`
+* Reject **negative deposits**  
+* Reject withdrawals if:  
+  * amount is negative, OR  
+  * amount is greater than balance  
+* Keep balance **private**; only modify through methods.
 
-You can test your `Product` class by:
-**You have max 3 test for this part**
+### Rejection rule (no exceptions yet)
 
-```bash
-  javac Product.java
-  curl.exe -F "args=-p2" -F "files=@Product.class" http://{LOCAL SERVER}:8080/submit
-```
+Since you do not have exception handling yet, you must implement rejections using **while loops**:
 
----
+* If invalid input is detected, use a while loop to prevent continuing until a valid amount is used.  
+* In a real system, this might be done via exceptions or error objects; here, you will enforce it using loops and simple messages.
 
-## Part 3: The Order Class
+### Part 3: Inheritance
 
-Each `Order` represents a purchase request for a product.
+Create at least **two concrete payment types** that extend PaymentMethod.
 
-### Required Instance Variables (private)
+## A) CardPayment
 
-- `orderId` of type `String`
-- `productName` of type `String`
-- `amount` of type `int`
-- `orderDate` of type `LocalDate`
+Represents a debit/credit card charge.
 
-### Constructor Requirements
+### Required Fields (private)
 
-The constructor must accept **four parameters**:
+* cardNumber (String)  
+* cardHolderName (String)
 
-- `orderId`
-- `productName`
-- `amount`
-- `orderDate`
+### Required Constructor
 
-It must:
-- Initialize all fields
-- Validate all inputs
-- Throw a user-defined exception if:
-  - `orderId` is `null` or empty
-  - `productName` is `null` or empty
-  - `amount` is not positive
-  - `orderDate` is `null` or in the future
+* public CardPayment(String cardNumber, String cardHolderName)
 
-### Required Methods
+### Required Behaviors
 
-Provide getters and setters (with validation):
+1. public boolean pay(double amount)  
+   * Reject payment if amount \<= 0 (use validation logic).  
+   * If valid, simulate a successful charge and return true.  
+   * (In real banking, this would call a gateway; here, you simulate.)
 
-- `public String getOrderId()`
-- `public String getProductName()`
-- `public int getAmount()`
-- `public LocalDate getOrderDate()`
+2. public String getMaskedDetails()  
+   * Must return a masked card format, such as:  
+     * "\*\*\*\* \*\*\*\* \*\*\*\* 1234 (Juan Dela Cruz)"  
+   * Only show the **last 4 digits** of the card number.
 
-Also include:
+## B) WalletPayment
 
-- `public int getOrderAgeInDays()`
-  - Returns only **full completed days** since `orderDate` until today
-  - Hint: use toEpochDay() method of LocalDate to compare, then cast the output to `int`.
+Represents payment using a Wallet balance.
 
-You can test your `Order` class by:
-**You have max 3 test for this part**
+### Required Field (private)
 
-```bash
-  javac Product.java Order.java
-  curl.exe -F "args=-p3" -F "files=@Product.class" -F "files=@Order.class" http://{LOCAL SERVER}:8080/submit
-```
+* Wallet wallet
 
----
+### Required Constructor
 
-## Part 4: The Store Class
+* public WalletPayment(Wallet wallet)
 
-The `Store` stores store credentials and manages collections of products and orders.
+### Required Behaviors
 
-> The `Store` class is already with little update needed. You just need to check if all requirements here are implemented.
+1. public boolean pay(double amount)  
+   * Reject payment if amount \<= 0.  
+   * Attempt wallet.withdraw(amount)  
+   * Return true if the withdrawal succeeds; otherwise, return false.
 
-Access the `Store` class by:
-```bash
-  wget -O Store.java http://{LOCAL SERVER}:8080/public/Store.java
-```
-This will download the `Store` java file in your project directory.
+2. public String getMaskedDetails()  
+   * Must return something safe, like:  
+     * "WALLET (Balance Available)" or "WALLET-\*\*\*\*"  
+   * Must not reveal internal private fields directly.
 
----
+### Part 4: Polymorphism
 
-### Required Instance Variables (private)
-
-- `name` of type `String`
-- `openingDate` of type `LocalDate`
-
-- `products` an array of type `Product`
-- `productSize` of type `int` (current number of products stored)
-- `productCapacity` of type `int` (maximum number of products)
-
-- `orders` an array of type `Order`
-- `orderSize` of type `int` (current number of orders stored)
-- `orderCapacity` of type `int` (maximum number of orders)
-
-### Constructor Requirements
-
-The constructor must accept **four parameters**:
-
-- `name`
-- `openingDate`
-- `productCapacity`
-- `orderCapacity`
-
-It must:
-- Initialize all fields
-- Allocate arrays using capacities
-- Set initial sizes to 0
-- Validate inputs and throw a user-defined exception if:
-  - `name` is `null` or empty
-  - `openingDate` is `null` or in the future
-  - `productCapacity` is not positive
-  - `orderCapacity` is not positive
+The Checkout class represents a checkout/payment processor that is **agnostic** to payment type.
 
-### Required Getter Methods
+### Required Method
 
-- `public String getName()`
-- `public LocalDate getOpeningDate()`
-
-- `public Product[] getProducts()`
-- `public int getProductSize()`
-- `public int getProductCapacity()`
+* public boolean process(PaymentMethod method, double amount)
 
-- `public Order[] getOrders()`
-- `public int getOrderSize()`
-- `public int getOrderCapacity()`
-
-### Required Core Methods
-
-#### Product Operations
-
-1. **addProduct**
-   - Signature: `public boolean addProduct(Product product)`
-   - Adds product to the array
-   - Returns `true` if successful
-   - Throws `StoreCapacityExceededException` if product capacity is reached
-   - Throws `InvalidProductDataException` if product is `null`
-
-2. **updateProduct**
-   - Signature: `public boolean updateProduct(Product target, Product replacement)`
-   - Replaces target product
-   - Returns `true` if replaced
-   - Throws `RecordNotFoundException` if target not found
-   - Throws `InvalidProductDataException` if target or replacement is `null`
-
-3. **searchProductByName**
-   - Signature: `public Product searchProductByName(String name)`
-   - Case-insensitive comparison using `equalsIgnoreCase()`
-   - Returns first match or `null` if not found
-
-4. **getProductAt**
-   - Signature: `public Product getProductAt(int index)`
-   - Returns product if index valid
-   - Throws `RecordNotFoundException` if index out of range
-
-#### Order Operations
-
-5. **createOrder**
-   - Signature: `public boolean createOrder(Order order)`
-   - Must:
-     - Check if order is null → throw `InvalidProductDataException`
-     - Check if order capacity is reached → throw `StoreCapacityExceededException`
-     - Find the product by `order.getProductName()`
-       - If not found → throw `RecordNotFoundException`
-     - Deduct stock using `deductStock(order.getAmount())`
-       - If insufficient stock → throw `InvalidProductDataException` (or a message via the same exception class)
-     - Add the order to orders array
-   - Returns `true` if created
-
-6. **cancelOrder**
-   - Signature: `public boolean cancelOrder(String orderId)`
-   - Must:
-     - Check if orderId is null or empty → throw `InvalidProductDataException`
-     - Find order by `orderId` (case-insensitive is optional)
-     - If not found → throw `RecordNotFoundException`
-     - Restore stock to the related product (restock amount)
-     - Remove the order from the orders array (shift items to fill gap)
-   - Returns `true` if canceled
-
-7. **searchOrderById**
-   - Signature: `public Order searchOrderById(String orderId)`
-   - Returns first match or `null`
-
-8. **getOrderAt**
-   - Signature: `public Order getOrderAt(int index)`
-   - Throws `RecordNotFoundException` if index out of range
-
-You can test your `Store` class by:
-**You have max 3 test for this part**
-
-```bash
-  javac Store.java Order.java Product.java
-  curl.exe -F "args=-p4" -F "files=@Product.class" -F "files=@Order.class" -F "files=@Store.class" http://{LOCAL SERVER}:8080/submit
-```
-
----
-
-## Test Everything!
-
-Assuming you have successfully compiled the previous parts.
-
-```bash
-  java StoreConsole
-```
-
-Below will be a sample output.
-
----
-
-## Sample Output (Illustrative)
-
-```bash
-Inventory & Order System: Java Version
-
-Enter store name: ByteMart
-Enter opening date (YYYY-MM-DD): 2018-07-01
-Enter max products: 2
-Enter max orders: 3
-
-Store created successfully.
-
-Store Menu
-(A) Add product
-(R) Restock product
-(U) Update product
-(L) List products
-(O) Create order
-(X) Cancel order
-(F) Find product by name
-(I) Store info
-(Q) Quit
-A
-
-Enter product name: USB Cable
-Enter price: 199.50
-Enter quantity: 10
-Product successfully added.
-
-O
-Enter order id: ORD-1001
-Enter product name: USB Cable
-Enter amount: 3
-Enter order date (YYYY-MM-DD): 2026-02-10
-Order created successfully.
-
-O
-Enter order id: ORD-1002
-Enter product name: USB Cable
-Enter amount: 999
-
-Error: InvalidProductDataException -- insufficient stock.
-
-Q
-Program terminated.
-```
-
----
-
-## Deliverables
-
-Submit the following `.java` files:
-
-- `Product.java`
-- `Order.java`
-- `Store.java`
-- `InvalidProductDataException.java`
-- `StoreCapacityExceededException.java`
-- `RecordNotFoundException.java`
-
-Use the command below and replace **YOUR_STUDENT_NUMBER** with your actual student number. If you have not completed some of the files yet, simply remove the corresponding line for each missing file from the command.
-
-```bash
-  curl.exe -s `
-  -F "student=YOUR_STUDENT_NUMBER" `
-  -F "files=@Product.java" `
-  -F "files=@Order.java" `
-  -F "files=@Store.java" `
-  -F "files=@InvalidProductDataException.java" `
-  -F "files=@StoreCapacityExceededException.java" `
-  -F "files=@RecordNotFoundException.java" `
-  http://{LOCAL SERVER}:8080/submit-all
-
-
-```
-**Inform your instructor once you have submitted to validate your submission.**
-
----
-
-## Notes
-
-- Follow encapsulation strictly (private fields, validated setters)
-- Prefer shifting array elements after deletions to avoid gaps
-- Do not use advanced collections (e.g., `ArrayList`).
+### Requirements
+
+* Must call: method.pay(amount)  
+* Must not use logic like:  
+  * if (method instanceof CardPayment) ...  
+  * The entire point is to rely on polymorphism.  
+* Should return the result of method.pay(amount)
+
+### **Real-world expectation**
+
+In banks, checkout is a “front system” that just sends requests to whatever payment channel is selected. It does not handle channel-specific logic.
+
+## Test with the Main
+
+In your terminal,  download by copy pasting the code below:
+
+| wget \-O BankingPaymentTester.class http://10.0.24.149:8081/public/BankingPaymentTester.class |
+| :---- |
+
+Then run the code:
+
+| javac \*.javajava BankingPaymentTester |
+| :---- |
+
+## Submission
+
+In your terminal, download the script by copy and pasting the code below:
+
+| wget GLChecker.ps1 http://10.0.24.149:8081/public/GLChecker.ps1 |
+| :---- |
+
+Then run by copy and pasting:
+
+| powershell.exe \-ExecutionPolicy Bypass \-File GLChecker.ps1 |
+| :---- |
+
+## Grading Process
+
+The program output for this laboratory shall be checked during the dedicated laboratory time. Specifically:
+
+1. Compiling and Running Assessment  
+2. Basic Input/Output Assessment
+
+Failure to provide the above during the dedicated time will result in a max grade of 10 pts. 
+
+The following will be performed after submission:
+
+1. Code Quality Assessment  
+2. Technical Specifications Assessment
+
+The **Program's Deadline is at the end of your Laboratory Session.**
+
+## What to submit 
+
+Submit your JAVA files to the dedicated submission bin in the LMS. Note of the deduction for late submission.
+
+## Grading Assessment
+
+Each Java File will be assessed according to this assessment.
+
+| Points | Description |
+| :---: | ----- |
+| 50 | All technical requirements are met Student independently demonstrates the ability to compile and run the program from the command line (CLI) The program compiles and runs without errors Correct output is produced for all valid inputs Output format exactly matches the specification Excellent code quality: clear structure, meaningful naming, consistent formatting, appropriate comments, no unnecessary code |
+| 40 | One minor technical requirement is missing or partially implemented Student demonstrates the ability to compile and run the program from the CLI The program compiles and runs without errors Correct output for all valid inputs with minor formatting differences Good code quality: readable and organized with minor naming, formatting, or commenting issues |
+| 30 | Some technical requirements are missing or incomplete Student demonstrates compiling and running the program from the CLI with minor guidance The program compiles and runs, but may show warnings or minor runtime issues Correct output for at least 50% of test cases Fair code quality: basic structure present, inconsistent formatting or naming, limited comments |
+| 20 | Many technical requirements are missing Student struggles to compile or run the program from the CLI and requires significant assistance The program runs only for a limited number of cases or with errors Correct output for less than 50% of test cases Poor code quality: disorganized structure, poor naming and formatting, repetitive or unnecessary code |
+| 10 | A student cannot independently compile and run the program from the CLI The program requires substantial instructor intervention to compile or run Output is mostly incorrect Very poor code quality: minimal structure, hard-coded values, incomplete logic, little attention to readability |
+| 0 | The student cannot compile or run the program from the CLI The program does not produce correct output for any input Code is missing, non-functional, or unrelated to the assignment |
+
+# 
+
+## Credits 
+
+These materials were developed through the collaboration of  Ms. Bea D. Santiago, Asst. Prof. John D. Ultra, Asst. Prof. Ryan Rey M. Daga, Mr. Kenn Acabal,  and Mr. Samson Rollo. 
